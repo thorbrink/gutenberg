@@ -2,7 +2,6 @@
  * WordPress dependencies
  */
 import { Component } from '@wordpress/element';
-import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import { withInstanceId } from '@wordpress/compose';
 
@@ -17,6 +16,7 @@ class LegacyWidgetEditHandler extends Component {
 		this.state = {
 			form: null,
 			idBase: null,
+			widgetNumber: null,
 		};
 		this.instanceUpdating = null;
 		this.onInstanceChange = this.onInstanceChange.bind( this );
@@ -25,7 +25,9 @@ class LegacyWidgetEditHandler extends Component {
 
 	componentDidMount() {
 		this.isStillMounted = true;
-		this.requestWidgetUpdater();
+		this.requestWidgetUpdater( undefined, ( response ) => {
+			this.props.onInstanceChange( null, !! response.form );
+		} );
 	}
 
 	componentDidUpdate( prevProps ) {
@@ -33,7 +35,9 @@ class LegacyWidgetEditHandler extends Component {
 			prevProps.instance !== this.props.instance &&
 			this.instanceUpdating !== this.props.instance
 		) {
-			this.requestWidgetUpdater();
+			this.requestWidgetUpdater( undefined, ( response ) => {
+				this.props.onInstanceChange( null, !! response.form );
+			} );
 		}
 		if ( this.instanceUpdating === this.props.instance ) {
 			this.instanceUpdating = null;
@@ -46,10 +50,8 @@ class LegacyWidgetEditHandler extends Component {
 
 	render() {
 		const { instanceId, identifier } = this.props;
-		const { id, idBase, form } = this.state;
-		if ( ! identifier ) {
-			return __( 'Not a valid widget.' );
-		}
+		const { id, idBase, form, widgetNumber } = this.state;
+
 		if ( ! form ) {
 			return null;
 		}
@@ -69,10 +71,11 @@ class LegacyWidgetEditHandler extends Component {
 						this.widgetEditDomManagerRef = ref;
 					} }
 					onInstanceChange={ this.onInstanceChange }
-					widgetNumber={ instanceId * -1 }
+					widgetNumber={ widgetNumber ? widgetNumber : instanceId * -1 }
 					id={ id }
 					idBase={ idBase }
 					form={ form }
+					identifier={ identifier }
 				/>
 			</div>
 		);
@@ -81,23 +84,24 @@ class LegacyWidgetEditHandler extends Component {
 	onInstanceChange( instanceChanges ) {
 		this.requestWidgetUpdater( instanceChanges, ( response ) => {
 			this.instanceUpdating = response.instance;
-			this.props.onInstanceChange( response.instance );
+			this.props.onInstanceChange( response.instance, !! response.form );
 		} );
 	}
 
 	requestWidgetUpdater( instanceChanges, callback ) {
-		const { identifier, instanceId, instance } = this.props;
-		if ( ! identifier ) {
+		const { identifier, instanceId, instance, widgetClass } = this.props;
+		if ( ! identifier && ! widgetClass ) {
 			return;
 		}
 
 		apiFetch( {
-			path: `/wp/v2/widgets/${ identifier }/`,
+			path: `/wp/v2/widgets/`,
 			data: {
 				identifier,
 				instance,
 				// use negative ids to make sure the id does not exist on the database.
 				id_to_use: instanceId * -1,
+				widget_class: widgetClass,
 				instance_changes: instanceChanges,
 			},
 			method: 'POST',
@@ -108,6 +112,7 @@ class LegacyWidgetEditHandler extends Component {
 						form: response.form,
 						idBase: response.id_base,
 						id: response.id,
+						widgetNumber: response.number,
 					} );
 					if ( callback ) {
 						callback( response );

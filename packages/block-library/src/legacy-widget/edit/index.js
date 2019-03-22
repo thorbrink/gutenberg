@@ -26,6 +26,7 @@ class LegacyWidgetEdit extends Component {
 	constructor() {
 		super( ...arguments );
 		this.state = {
+			hasEditForm: true,
 			isPreview: false,
 		};
 		this.switchToEdit = this.switchToEdit.bind( this );
@@ -40,31 +41,36 @@ class LegacyWidgetEdit extends Component {
 			hasPermissionsToManageWidgets,
 			setAttributes,
 		} = this.props;
-		const { isPreview } = this.state;
-		const { identifier, isCallbackWidget } = attributes;
-		const widgetObject = identifier && availableLegacyWidgets[ identifier ];
-		if ( ! widgetObject ) {
+		const { isPreview, hasEditForm } = this.state;
+		const { identifier, widgetClass } = attributes;
+		const widgetObject =
+			( identifier && availableLegacyWidgets[ identifier ] ) ||
+			( widgetClass && availableLegacyWidgets[ widgetClass ] );
+		if ( ! identifier && ! widgetClass ) {
 			return (
 				<LegacyWidgetPlaceholder
 					availableLegacyWidgets={ availableLegacyWidgets }
 					currentWidget={ identifier }
 					hasPermissionsToManageWidgets={ hasPermissionsToManageWidgets }
-					onChangeWidget={ ( newWidget ) => setAttributes( {
-						instance: {},
-						identifier: newWidget,
-						isCallbackWidget: availableLegacyWidgets[ newWidget ].isCallbackWidget,
-					} ) }
+					onChangeWidget={ ( newWidget ) => {
+						const { isCallbackWidget } = availableLegacyWidgets[ newWidget ];
+						setAttributes( {
+							instance: {},
+							identifier: isCallbackWidget ? newWidget : undefined,
+							widgetClass: isCallbackWidget ? undefined : newWidget,
+						} );
+					} }
 				/>
 			);
 		}
 
-		const inspectorControls = (
+		const inspectorControls = widgetObject ? (
 			<InspectorControls>
 				<PanelBody title={ widgetObject.name }>
 					{ widgetObject.description }
 				</PanelBody>
 			</InspectorControls>
-		);
+		) : null;
 		if ( ! hasPermissionsToManageWidgets ) {
 			return (
 				<>
@@ -78,14 +84,14 @@ class LegacyWidgetEdit extends Component {
 			<>
 				<BlockControls>
 					<Toolbar>
-						{ ! widgetObject.isHidden && (
+						{ ( widgetObject && ! widgetObject.isHidden ) && (
 							<IconButton
 								onClick={ this.changeWidget }
 								label={ __( 'Change widget' ) }
 								icon="update"
 							/>
 						) }
-						{ ! isCallbackWidget && (
+						{ hasEditForm && (
 							<>
 								<Button
 									className={ `components-tab-button ${ ! isPreview ? 'is-active' : '' }` }
@@ -104,21 +110,29 @@ class LegacyWidgetEdit extends Component {
 					</Toolbar>
 				</BlockControls>
 				{ inspectorControls }
-				{ ! isCallbackWidget && (
+				{ hasEditForm && (
 					<LegacyWidgetEditHandler
 						isVisible={ ! isPreview }
 						identifier={ attributes.identifier }
+						widgetClass={ attributes.widgetClass }
 						instance={ attributes.instance }
 						onInstanceChange={
-							( newInstance ) => {
-								this.props.setAttributes( {
-									instance: newInstance,
-								} );
+							( newInstance, newHasEditForm ) => {
+								if ( newInstance ) {
+									this.props.setAttributes( {
+										instance: newInstance,
+									} );
+								}
+								if ( newHasEditForm !== this.hasEditForm ) {
+									this.setState( {
+										hasEditForm: newHasEditForm,
+									} );
+								}
 							}
 						}
 					/>
 				) }
-				{ ( isPreview || isCallbackWidget ) && this.renderWidgetPreview() }
+				{ ( isPreview || ! hasEditForm ) && this.renderWidgetPreview() }
 			</>
 		);
 	}
@@ -128,6 +142,10 @@ class LegacyWidgetEdit extends Component {
 		this.props.setAttributes( {
 			instance: {},
 			identifier: undefined,
+			widgetClass: undefined,
+		} );
+		this.setState( {
+			hasEditForm: true,
 		} );
 	}
 
