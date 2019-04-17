@@ -11,44 +11,53 @@ import { withSelect, withDispatch } from '@wordpress/data';
 import { cloneBlock, hasBlockSupport } from '@wordpress/blocks';
 
 function BlockActions( {
-	onDuplicate,
-	onRemove,
-	onInsertBefore,
-	onInsertAfter,
-	isLocked,
 	canDuplicate,
+	canInsertDefaultBlock,
 	children,
+	isLocked,
+	onDuplicate,
+	onInsertAfter,
+	onInsertBefore,
+	onRemove,
 } ) {
 	return children( {
+		canDuplicate,
+		canInsertDefaultBlock,
+		isLocked,
 		onDuplicate,
-		onRemove,
 		onInsertAfter,
 		onInsertBefore,
-		isLocked,
-		canDuplicate,
+		onRemove,
 	} );
 }
 
 export default compose( [
 	withSelect( ( select, props ) => {
 		const {
+			canInsertBlockType,
+			getBlockRootClientId,
 			getBlocksByClientId,
 			getTemplateLock,
-			getBlockRootClientId,
 		} = select( 'core/block-editor' );
+		const { getDefaultBlockName } = select( 'core/blocks' );
 
 		const blocks = getBlocksByClientId( props.clientIds );
 		const canDuplicate = every( blocks, ( block ) => {
 			return !! block && hasBlockSupport( block.name, 'multiple', true );
 		} );
 		const rootClientId = getBlockRootClientId( props.clientIds[ 0 ] );
+		const canInsertDefaultBlock = canInsertBlockType(
+			getDefaultBlockName(),
+			rootClientId
+		);
 
 		return {
-			isLocked: !! getTemplateLock( rootClientId ),
 			blocks,
 			canDuplicate,
-			rootClientId,
+			canInsertDefaultBlock,
 			extraProps: props,
+			isLocked: !! getTemplateLock( rootClientId ),
+			rootClientId,
 		};
 	} ),
 	withDispatch( ( dispatch, props, { select } ) => {
