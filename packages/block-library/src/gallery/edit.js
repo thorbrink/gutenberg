@@ -2,7 +2,7 @@
  * External dependencies
  */
 import classnames from 'classnames';
-import { filter, map } from 'lodash';
+import { filter, map, get, groupBy } from 'lodash';
 
 /**
  * WordPress dependencies
@@ -125,21 +125,29 @@ class GalleryEdit extends Component {
 		};
 	}
 
+	selectCaption( gallery, attachment ) {
+		const savedAttachmentCaption = get(
+			gallery, [ attachment.id, 0, 'attachmentCaption' ], ''
+		);
+		if ( savedAttachmentCaption !== attachment.caption ) {
+			return attachment.caption;
+		}
+		return get(
+			gallery, [ attachment.id, 0, 'caption' ], attachment.caption
+		);
+	}
+
 	onSelectImages( newImages ) {
 		const { columns, images } = this.props.attributes;
 
+		const galleryImages = groupBy( images, 'id' );
+
 		this.setAttributes( {
-			images: newImages.map( ( image ) => {
-				const newImage = pickRelevantMediaFiles( image );
-				let oldImage = filter( images, { id: newImage.id } );
-				if ( oldImage.length > 0 ) {
-					oldImage = oldImage.reduce( ( img ) => img );
-					if ( oldImage.caption !== '' ) {
-						newImage.caption = oldImage.caption;
-					}
-				}
-				return newImage;
-			} ),
+			images: newImages.map( ( attachment ) => ( {
+				...pickRelevantMediaFiles( attachment ),
+				caption: this.selectCaption( galleryImages, attachment ),
+				attachmentCaption: attachment.caption,
+			} ) ),
 			columns: columns ? Math.min( newImages.length, columns ) : columns,
 		} );
 	}
