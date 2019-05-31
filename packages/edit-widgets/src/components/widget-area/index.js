@@ -2,7 +2,7 @@
  * WordPress dependencies
  */
 import { compose } from '@wordpress/compose';
-import { Panel, PanelBody } from '@wordpress/components';
+import { Panel, PanelBody, Popover } from '@wordpress/components';
 import {
 	BlockEditorProvider,
 	BlockList,
@@ -29,6 +29,7 @@ function WidgetArea( {
 					settings={ blockEditorSettings }
 				>
 					<BlockList />
+					<Popover.Slot />
 				</BlockEditorProvider>
 			</PanelBody>
 		</Panel>
