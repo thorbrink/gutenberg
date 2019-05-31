@@ -25,6 +25,7 @@
 		"@wordpress/block-editor": "file:../block-editor",
 		"@wordpress/components": "file:../components",
 		"@wordpress/element": "file:../element",
+		"@wordpress/format-library": "file:../format-library",
 		"@wordpress/i18n": "file:../i18n"
 	},
 	"publishConfig": {
