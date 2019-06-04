@@ -85,6 +85,53 @@ class WP_REST_Widget_Areas_Controller extends WP_REST_Controller {
 	}
 
 	/**
+	 * Retrieves the comment's schema, conforming to JSON Schema.
+	 *
+	 * @since 4.7.0
+	 *
+	 * @return array
+	 */
+	public function get_item_schema() {
+		$schema = array(
+			'$schema'    => 'http://json-schema.org/draft-04/schema#',
+			'title'      => 'widget-area',
+			'type'       => 'object',
+			'properties' => array(
+				'content' => array(
+					'description' => __( 'The content for the object.', 'gutenberg' ),
+					'type'        => 'object',
+					'context'     => array( 'view', 'edit', 'embed' ),
+					'arg_options' => array(
+						'sanitize_callback' => null,
+						'validate_callback' => null,
+					),
+					'properties'  => array(
+						'raw'           => array(
+							'description' => __( 'Content for the object, as it exists in the database.', 'gutenberg' ),
+							'type'        => 'string',
+							'context'     => array( 'view', 'edit', 'embed' ),
+						),
+						'rendered'      => array(
+							'description' => __( 'HTML content for the object, transformed for display.', 'gutenberg' ),
+							'type'        => 'string',
+							'context'     => array( 'view', 'edit', 'embed' ),
+							'readonly'    => true,
+						),
+						'block_version' => array(
+							'description' => __( 'Version of the content block format used by the object.', 'gutenberg' ),
+							'type'        => 'integer',
+							'context'     => array( 'view', 'edit', 'embed' ),
+							'readonly'    => true,
+						),
+					),
+				),
+			),
+		);
+
+		return $schema;
+	}
+
+	/**
 	 * Checks whether a given request has permission to read widget areas.
 	 *
 	 * @since 5.7.0
